@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protokół zdawczo-odbiorczy — LeaseGuard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="header">
+        <div class="container header-inner">
+            <a href="/" class="header-brand">
+                <span class="logo-icon">🏠</span>
+                <span class="logo-text">LeaseGuard</span>
+            </a>
+            <nav class="nav">
+                <a href="/contract" class="nav-link">📄 Analiza umowy</a>
+                <a href="/protocol" class="nav-link nav-link--active">📸 Protokół</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h1>📸 Protokół zdawczo-odbiorczy</h1>
+            <p>Wgraj zdjęcia z mieszkania — AI wykryje usterki i wygeneruje protokół</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-form">
+                <div class="form-group">
+                    <label class="label" for="address">Adres nieruchomości (opcjonalnie)</label>
+                    <input type="text" id="address" class="input" placeholder="np. ul. Przykładowa 1/5, 00-001 Warszawa">
+                </div>
+
+                <div class="upload-zone" id="upload-zone">
+                    <div class="upload-zone-inner">
+                        <span class="upload-icon">📷</span>
+                        <p>Przeciągnij zdjęcia tutaj lub kliknij aby wybrać</p>
+                        <p class="upload-hint">PNG, JPG, JPEG, WEBP • Maksymalnie 10 zdjęć • Max 16 MB łącznie</p>
+                        <input type="file" id="photo-input" multiple accept=".png,.jpg,.jpeg,.webp" style="display:none;">
+                        <button class="btn btn--secondary" onclick="document.getElementById('photo-input').click()">
+                            Wybierz zdjęcia
+                        </button>
+                    </div>
+                </div>
+
+                <div class="photo-preview-grid" id="photo-preview-grid"></div>
+
+                <div class="upload-actions">
+                    <span id="photo-count" class="photo-count"></span>
+                    <button id="generate-btn" class="btn btn--primary" disabled>
+                        🔍 Generuj protokół
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="loader" id="loader" style="display:none;">
+            <div class="loader-spinner"></div>
+            <p>Agenci AI analizują zdjęcia...<br><small>PhotoAnalysisAgent → ProtocolAgent</small></p>
+        </div>
+
+        <div class="error-box" id="error-box" style="display:none;"></div>
+
+        <div class="protocol-results" id="protocol-results" style="display:none;">
+            <div class="defect-summary" id="defect-summary"></div>
+
+            <div class="rooms-grid" id="rooms-grid"></div>
+
+            <div class="protocol-text-section">
+                <div class="protocol-text-header">
+                    <h3>📋 Protokół zdawczo-odbiorczy</h3>
+                    <button id="copy-protocol" class="btn btn--secondary btn--sm">📋 Kopiuj</button>
+                    <button id="print-protocol" class="btn btn--secondary btn--sm">🖨️ Drukuj</button>
+                </div>
+                <pre class="protocol-text" id="protocol-text"></pre>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>LeaseGuard — projekt AI/LLM | Powered by Google Gemini 2.5 Flash</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/protocol.js') }}"></script>
+</body>
+</html>

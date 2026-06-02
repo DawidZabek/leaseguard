@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analiza umowy — LeaseGuard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="header">
+        <div class="container header-inner">
+            <a href="/" class="header-brand">
+                <span class="logo-icon">🏠</span>
+                <span class="logo-text">LeaseGuard</span>
+            </a>
+            <nav class="nav">
+                <a href="/contract" class="nav-link nav-link--active">📄 Analiza umowy</a>
+                <a href="/protocol" class="nav-link">📸 Protokół</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h1>📄 Analiza umowy najmu</h1>
+            <p>Wklej tekst umowy — AI sprawdzi klauzule pod kątem ustawy o ochronie praw lokatorów</p>
+        </div>
+
+        <div class="two-col">
+            <div class="input-panel">
+                <label class="label" for="contract-text">Tekst umowy najmu</label>
+                <textarea
+                    id="contract-text"
+                    class="textarea"
+                    placeholder="Wklej tutaj pełny tekst umowy najmu...
+
+Możesz też wkleić tylko wybrane fragmenty, które chcesz sprawdzić."
+                    rows="20"
+                ></textarea>
+                <div class="input-actions">
+                    <button id="load-sample" class="btn btn--secondary">📂 Wczytaj przykładową umowę</button>
+                    <button id="analyze-btn" class="btn btn--primary">🔍 Analizuj umowę</button>
+                </div>
+            </div>
+
+            <div class="results-panel" id="results-panel" style="display:none;">
+                <div class="risk-summary" id="risk-summary"></div>
+                <div class="overall-rec" id="overall-rec"></div>
+                <div class="clauses-table-wrap">
+                    <h3>Klauzule umowy</h3>
+                    <table class="clauses-table" id="clauses-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Klauzula</th>
+                                <th>Uzasadnienie</th>
+                                <th>Podstawa prawna</th>
+                                <th>Zalecenie</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clauses-body"></tbody>
+                    </table>
+                </div>
+                <div class="questions-section" id="questions-section"></div>
+            </div>
+        </div>
+
+        <div class="loader" id="loader" style="display:none;">
+            <div class="loader-spinner"></div>
+            <p>Agenci AI analizują umowę...<br><small>ExtractorAgent → LegalAgent → RiskAgent → AdvisorAgent</small></p>
+        </div>
+
+        <div class="error-box" id="error-box" style="display:none;"></div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>LeaseGuard — projekt AI/LLM | Powered by Google Gemini 2.5 Flash + ChromaDB RAG</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/contract.js') }}"></script>
+</body>
+</html>

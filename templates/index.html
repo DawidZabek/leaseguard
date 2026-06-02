@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeaseGuard — Inteligentny asystent najemcy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-brand">
+                <span class="logo-icon">🏠</span>
+                <span class="logo-text">LeaseGuard</span>
+            </div>
+            <p class="header-tagline">Inteligentny asystent najemcy — chronisz swoją kaucję i rozumiesz umowę</p>
+        </div>
+    </header>
+
+    <main class="container hero-section">
+        <div class="hero-grid">
+            <a href="/contract" class="module-card module-card--contract">
+                <div class="module-icon">📄</div>
+                <h2>Analiza umowy</h2>
+                <p>Wklej tekst umowy najmu. AI wyodrębni klauzule, sprawdzi je pod kątem ustawy o ochronie praw lokatorów i wskaże potencjalne pułapki prawne.</p>
+                <ul class="module-features">
+                    <li>✅ Weryfikacja klauzul względem prawa</li>
+                    <li>⚠️ Flagi ryzyka: OK / Podejrzana / Nielegalna</li>
+                    <li>❓ Pytania do zadania właścicielowi</li>
+                    <li>💡 Ogólna rekomendacja</li>
+                </ul>
+                <span class="module-cta">Analizuj umowę →</span>
+            </a>
+
+            <a href="/protocol" class="module-card module-card--protocol">
+                <div class="module-icon">📸</div>
+                <h2>Protokół zdawczo-odbiorczy</h2>
+                <p>Wgraj zdjęcia z mieszkania. AI wykryje usterki i wygeneruje profesjonalny protokół zdawczo-odbiorczy, który ochroni Twoją kaucję.</p>
+                <ul class="module-features">
+                    <li>🔍 Automatyczne wykrywanie usterek</li>
+                    <li>🏠 Analiza pokój po pokoju</li>
+                    <li>📋 Gotowy protokół do wydruku</li>
+                    <li>🛡️ Dokumentacja na wypadek sporu</li>
+                </ul>
+                <span class="module-cta">Generuj protokół →</span>
+            </a>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat">
+                <span class="stat-value">2 min</span>
+                <span class="stat-label">zamiast 2 godzin analizy</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value">300–500 zł</span>
+                <span class="stat-label">oszczędność na prawniku</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value">art. 6</span>
+                <span class="stat-label">ustawa o ochronie praw lokatorów</span>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>LeaseGuard — projekt AI/LLM | Powered by Google Gemini 2.5 Flash + ChromaDB RAG</p>
+            <p class="footer-disclaimer">Narzędzie ma charakter informacyjny. W sprawach spornych skonsultuj się z prawnikiem.</p>
+        </div>
+    </footer>
+</body>
+</html>
