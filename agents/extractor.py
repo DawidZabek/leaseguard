@@ -2,7 +2,7 @@ import json
 import re
 from models.schemas import ContractClause, ClauseRisk
 from rag.setup import query_law
-from agents.utils import generate_with_fallback
+from agents.utils import generate_with_fallback, strip_json_fences
 
 CONTRACT_CHAR_LIMIT = 6000
 
@@ -51,13 +51,7 @@ def run_extractor(contract_text: str) -> tuple[list[ContractClause], list[Clause
         law_context=law_context,
         contract_text=_compress_contract(contract_text),
     )
-    text = generate_with_fallback(prompt)
-
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
-    text = text.strip()
+    text = strip_json_fences(generate_with_fallback(prompt))
 
     raw_items = json.loads(text)
     clauses, clause_risks = [], []

@@ -1,6 +1,6 @@
 import json
 from models.schemas import ClauseRisk, LeaseReport
-from agents.utils import generate_with_fallback
+from agents.utils import generate_with_fallback, strip_json_fences
 
 ADVISOR_PROMPT = """Jesteś doradcą najemców mieszkań. Na podstawie analizy klauzul:
 
@@ -23,13 +23,7 @@ def run_advisor(clause_risks: list[ClauseRisk]) -> LeaseReport:
         lines.append(f"- [{status_label.get(cr.status,'?')}] {cr.clause.clause_type}: {cr.clause.content}")
 
     prompt = ADVISOR_PROMPT.format(clauses_compact="\n".join(lines))
-    text = generate_with_fallback(prompt)
-
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
-    text = text.strip()
+    text = strip_json_fences(generate_with_fallback(prompt))
 
     result = json.loads(text)
     return LeaseReport(

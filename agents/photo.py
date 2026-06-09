@@ -2,7 +2,7 @@ import json
 from PIL import Image
 import io
 from models.schemas import RoomCondition
-from agents.utils import generate_with_fallback
+from agents.utils import generate_with_fallback, strip_json_fences
 
 
 PHOTO_PROMPT = """Jesteś rzeczoznawcą sporządzającym protokół zdawczo-odbiorczy mieszkania w Polsce.
@@ -46,13 +46,7 @@ def _encode_image(image_path: str) -> dict:
 
 def run_photo_analysis(image_path: str) -> RoomCondition:
     image_data = _encode_image(image_path)
-    text = generate_with_fallback(PHOTO_PROMPT, image_data=image_data)
-
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
-    text = text.strip()
+    text = strip_json_fences(generate_with_fallback(PHOTO_PROMPT, image_data=image_data))
 
     data = json.loads(text)
     return RoomCondition(

@@ -3,7 +3,18 @@ import re
 import time
 import google.generativeai as genai
 
-# Ładuj wszystkie dostępne klucze: GEMINI_API_KEY, GEMINI_API_KEY_2, GEMINI_API_KEY_3, ...
+
+def strip_json_fences(text: str) -> str:
+    """Usuwa markdown code fences z odpowiedzi LLM (```json ... ```)."""
+    text = text.strip()
+    if text.startswith("```"):
+        parts = text.split("```")
+        text = parts[1] if len(parts) > 1 else text
+        if text.startswith("json"):
+            text = text[4:]
+    return text.strip()
+
+
 def _load_api_keys() -> list[str]:
     keys = []
     primary = os.getenv("GEMINI_API_KEY", "").strip()
@@ -18,6 +29,7 @@ def _load_api_keys() -> list[str]:
         i += 1
     return keys
 
+
 API_KEYS = _load_api_keys()
 
 MODELS_FALLBACK = [
@@ -29,7 +41,6 @@ MODELS_FALLBACK = [
     "gemini-2.5-flash",
 ]
 
-# Modele z wyczerpanym limitem dziennym — per klucz API
 _daily_exhausted: dict[str, set[str]] = {}
 
 
@@ -57,9 +68,8 @@ def generate_with_fallback(prompt: str, image_data: dict | None = None) -> str:
         available_models = [m for m in MODELS_FALLBACK if m not in exhausted]
 
         if not available_models:
-            # Wszystkie modele wyczerpane dla tego klucza — reset i próbuj dalej
-            _daily_exhausted[api_key] = set()
-            available_models = list(MODELS_FALLBACK)
+            # Wszystkie modele dzienne wyczerpane dla tego klucza — przechodzimy do następnego
+            continue
 
         genai.configure(api_key=api_key)
 

@@ -1,5 +1,4 @@
 import os
-import sys
 import json
 import uuid
 import fitz
@@ -11,8 +10,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-sys.path.insert(0, os.path.dirname(__file__))
-
 from rag.setup import setup_rag
 from agents.extractor import run_extractor
 from agents.advisor import run_advisor
@@ -20,7 +17,11 @@ from agents.photo import run_photo_analysis
 from agents.protocol import run_protocol
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "leaseguard-dev-secret")
+_secret = os.getenv("SECRET_KEY")
+if not _secret:
+    import secrets as _secrets
+    _secret = _secrets.token_hex(32)
+app.secret_key = _secret
 app.config["UPLOAD_FOLDER"] = os.path.join(os.path.dirname(__file__), "uploads")
 app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024
 
@@ -36,8 +37,8 @@ def _ext(filename: str) -> str:
 
 def extract_text_from_file(path: str, ext: str) -> str:
     if ext == "pdf":
-        doc = fitz.open(path)
-        return "\n".join(page.get_text() for page in doc)
+        with fitz.open(path) as doc:
+            return "\n".join(page.get_text() for page in doc)
     if ext in ("docx", "doc"):
         doc = docx.Document(path)
         return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
@@ -189,16 +190,6 @@ DEJAVU_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
 
 def _build_protocol_pdf(text: str) -> bytes:
-    def wrap_words(line: str, max_chars: int = 80) -> str:
-        parts = []
-        for word in line.split(" "):
-            while len(word) > max_chars:
-                parts.append(word[:max_chars])
-                word = word[max_chars:]
-            parts.append(word)
-        return " ".join(parts)
-
-    # Marginesy przed add_page — to jest kluczowe
     pdf = FPDF(orientation="P", unit="mm", format="A4")
     pdf.set_margins(left=20, top=20, right=20)
     pdf.set_auto_page_break(auto=True, margin=20)
@@ -206,7 +197,7 @@ def _build_protocol_pdf(text: str) -> bytes:
     pdf.add_font("DejaVu", style="", fname=DEJAVU_FONT)
     pdf.add_font("DejaVu", style="B", fname=DEJAVU_BOLD)
 
-    w = pdf.epw  # effective page width po marginesach (~170mm)
+    w = pdf.epw
 
     pdf.set_font("DejaVu", style="B", size=13)
     pdf.cell(w, 10, "PROTOKOL ZDAWCZO-ODBIORCZY", align="C", new_x="LMARGIN", new_y="NEXT")
@@ -214,7 +205,7 @@ def _build_protocol_pdf(text: str) -> bytes:
     pdf.set_font("DejaVu", size=10)
 
     for raw_line in text.splitlines():
-        line = wrap_words(raw_line.strip())
+        line = raw_line.strip()
         if not line:
             pdf.ln(3)
             continue
