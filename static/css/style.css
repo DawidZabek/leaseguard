@@ -51,7 +51,6 @@ body {
     color: var(--text);
 }
 
-.logo-icon { font-size: 1.5rem; }
 .logo-text { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
 
 .header-tagline {
@@ -107,7 +106,13 @@ body {
 .module-card--contract:hover { border-color: var(--primary); }
 .module-card--protocol:hover { border-color: var(--success); }
 
-.module-icon { font-size: 2.5rem; }
+.module-label {
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-muted);
+}
 
 .module-card h2 { font-size: 1.4rem; }
 
@@ -545,6 +550,69 @@ body {
     max-height: 500px;
     overflow-y: auto;
 }
+
+.protocol-text--editable {
+    width: 100%;
+    border: none;
+    resize: vertical;
+    min-height: 300px;
+    outline: none;
+    background: var(--surface);
+    color: var(--text);
+}
+
+/* INPUT TABS */
+.input-tabs {
+    display: flex;
+    gap: .4rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: .5rem;
+}
+
+.input-tab {
+    padding: .4rem .9rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: none;
+    font-family: inherit;
+    font-size: .85rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all .15s;
+}
+
+.input-tab:hover { background: var(--bg); color: var(--text); }
+.input-tab--active { background: var(--primary); color: white; border-color: var(--primary); }
+
+/* DOC UPLOAD */
+.doc-upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 2.5rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+}
+
+.doc-upload-zone:hover, .doc-upload-zone.drag-over {
+    border-color: var(--primary);
+    background: rgba(37, 99, 235, .03);
+}
+
+.doc-status {
+    margin-top: .75rem;
+    padding: .75rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: .875rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.doc-status--ok { background: #dcfce7; color: var(--success); border: 1px solid #bbf7d0; }
+.doc-status--loading { background: #eff6ff; color: var(--primary); border: 1px solid #bfdbfe; }
+.doc-status--error { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
 
 /* RESULTS PANEL */
 .results-panel {

@@ -10,36 +10,55 @@
     <header class="header">
         <div class="container header-inner">
             <a href="/" class="header-brand">
-                <span class="logo-icon">🏠</span>
                 <span class="logo-text">LeaseGuard</span>
             </a>
             <nav class="nav">
-                <a href="/contract" class="nav-link nav-link--active">📄 Analiza umowy</a>
-                <a href="/protocol" class="nav-link">📸 Protokół</a>
+                <a href="/contract" class="nav-link nav-link--active">Analiza umowy</a>
+                <a href="/protocol" class="nav-link">Protokół</a>
             </nav>
         </div>
     </header>
 
     <main class="container">
         <div class="page-header">
-            <h1>📄 Analiza umowy najmu</h1>
-            <p>Wklej tekst umowy — AI sprawdzi klauzule pod kątem ustawy o ochronie praw lokatorów</p>
+            <h1>Analiza umowy najmu</h1>
+            <p>Wklej lub wgraj dokument — AI sprawdzi klauzule pod kątem ustawy o ochronie praw lokatorów</p>
         </div>
 
         <div class="two-col">
             <div class="input-panel">
-                <label class="label" for="contract-text">Tekst umowy najmu</label>
-                <textarea
-                    id="contract-text"
-                    class="textarea"
-                    placeholder="Wklej tutaj pełny tekst umowy najmu...
+                <div class="input-tabs">
+                    <button class="input-tab input-tab--active" data-tab="paste">Wklej tekst</button>
+                    <button class="input-tab" data-tab="upload">Wgraj dokument</button>
+                </div>
 
-Możesz też wkleić tylko wybrane fragmenty, które chcesz sprawdzić."
-                    rows="20"
-                ></textarea>
+                <div id="tab-paste">
+                    <label class="label" for="contract-text">Tekst umowy najmu</label>
+                    <textarea
+                        id="contract-text"
+                        class="textarea"
+                        placeholder="Wklej tutaj pełny tekst umowy najmu..."
+                        rows="18"
+                    ></textarea>
+                </div>
+
+                <div id="tab-upload" style="display:none;">
+                    <div class="doc-upload-zone" id="doc-upload-zone">
+                        <div class="upload-zone-inner">
+                            <p>Przeciągnij dokument lub kliknij aby wybrać</p>
+                            <p class="upload-hint">PDF, DOCX, TXT &bull; max 32 MB</p>
+                            <input type="file" id="doc-input" accept=".pdf,.docx,.doc,.txt" style="display:none;">
+                            <button class="btn btn--secondary" onclick="document.getElementById('doc-input').click()">
+                                Wybierz plik
+                            </button>
+                        </div>
+                    </div>
+                    <div id="doc-status" class="doc-status" style="display:none;"></div>
+                </div>
+
                 <div class="input-actions">
-                    <button id="load-sample" class="btn btn--secondary">📂 Wczytaj przykładową umowę</button>
-                    <button id="analyze-btn" class="btn btn--primary">🔍 Analizuj umowę</button>
+                    <button id="load-sample" class="btn btn--secondary">Przykładowa umowa</button>
+                    <button id="analyze-btn" class="btn btn--primary">Analizuj umowę</button>
                 </div>
             </div>
 
@@ -67,7 +86,7 @@ Możesz też wkleić tylko wybrane fragmenty, które chcesz sprawdzić."
 
         <div class="loader" id="loader" style="display:none;">
             <div class="loader-spinner"></div>
-            <p>Agenci AI analizują umowę...<br><small>ExtractorAgent → LegalAgent → RiskAgent → AdvisorAgent</small></p>
+            <p>Agenci AI analizują umowę...<br><small>ExtractorAgent &rarr; LegalAgent &rarr; RiskAgent &rarr; AdvisorAgent</small></p>
         </div>
 
         <div class="error-box" id="error-box" style="display:none;"></div>
@@ -75,7 +94,7 @@ Możesz też wkleić tylko wybrane fragmenty, które chcesz sprawdzić."
 
     <footer class="footer">
         <div class="container">
-            <p>LeaseGuard — projekt AI/LLM | Powered by Google Gemini 2.5 Flash + ChromaDB RAG</p>
+            <p>LeaseGuard — projekt AI/LLM</p>
         </div>
     </footer>
 

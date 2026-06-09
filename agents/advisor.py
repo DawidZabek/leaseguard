@@ -2,50 +2,27 @@ import json
 from models.schemas import ClauseRisk, LeaseReport
 from agents.utils import generate_with_fallback
 
+ADVISOR_PROMPT = """Jesteś doradcą najemców mieszkań. Na podstawie analizy klauzul:
 
-ADVISOR_PROMPT = """Jesteś doradcą dla najemców mieszkań w Polsce.
+{clauses_compact}
 
-Na podstawie analizy klauzul umowy przygotuj:
-1. Listę pytań do zadania właścicielowi przed podpisaniem umowy
-2. Ogólną rekomendację dla najemcy
+Zwróć JSON:
+{{"questions_for_landlord":["pytanie 1","pytanie 2","pytanie 3"],"overall_recommendation":"2 zdania"}}
 
-WYNIKI ANALIZY KLAUZUL:
-{clauses_summary}
-
-STATYSTYKI:
-- Klauzule OK: {ok_count}
-- Klauzule podejrzane: {warning_count}
-- Klauzule niezgodne z prawem: {illegal_count}
-
-Zwróć JSON z polami:
-- questions_for_landlord: lista pytań (array of strings), minimum 3 pytania
-- overall_recommendation: ogólna rekomendacja dla najemcy (2-3 zdania)
-
-Pytania powinny być konkretne i odnosić się do wykrytych problemów.
-Rekomendacja powinna być jednoznaczna: czy podpisać, negocjować, czy odrzucić umowę.
-
-Zwróć TYLKO JSON, bez dodatkowego tekstu.
-"""
+Pytania mają dotyczyć konkretnych problemów z umowy. Rekomendacja: podpisać / negocjować / odrzucić.
+Zwróć TYLKO JSON."""
 
 
 def run_advisor(clause_risks: list[ClauseRisk]) -> LeaseReport:
     risk_summary = {"ok": 0, "warning": 0, "illegal": 0}
-    clauses_summary = []
+    lines = []
+    status_label = {"ok": "OK", "warning": "PODEJRZANA", "illegal": "NIELEGALNA"}
 
     for cr in clause_risks:
         risk_summary[cr.status] = risk_summary.get(cr.status, 0) + 1
-        emoji = {"ok": "✅", "warning": "⚠️", "illegal": "❌"}.get(cr.status, "?")
-        clauses_summary.append(
-            f"{emoji} [{cr.clause.clause_type}] {cr.clause.content}\n"
-            f"   Ocena: {cr.justification}"
-        )
+        lines.append(f"- [{status_label.get(cr.status,'?')}] {cr.clause.clause_type}: {cr.clause.content}")
 
-    prompt = ADVISOR_PROMPT.format(
-        clauses_summary="\n\n".join(clauses_summary),
-        ok_count=risk_summary["ok"],
-        warning_count=risk_summary["warning"],
-        illegal_count=risk_summary["illegal"],
-    )
+    prompt = ADVISOR_PROMPT.format(clauses_compact="\n".join(lines))
     text = generate_with_fallback(prompt)
 
     if text.startswith("```"):
@@ -54,11 +31,10 @@ def run_advisor(clause_risks: list[ClauseRisk]) -> LeaseReport:
             text = text[4:]
     text = text.strip()
 
-    advisor_result = json.loads(text)
-
+    result = json.loads(text)
     return LeaseReport(
         clauses=clause_risks,
-        questions_for_landlord=advisor_result.get("questions_for_landlord", []),
-        overall_recommendation=advisor_result.get("overall_recommendation", ""),
+        questions_for_landlord=result.get("questions_for_landlord", []),
+        overall_recommendation=result.get("overall_recommendation", ""),
         risk_summary=risk_summary,
     )

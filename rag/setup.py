@@ -88,24 +88,52 @@ def setup_rag() -> None:
     print(f"RAG: załadowano {len(chunks)} przepisów do ChromaDB")
 
 
+# Zawsze dołączane — kaucja, podwyżka, wypowiedzenie, prawo do używania lokalu
+PINNED_ARTICLE_IDS = ["art_6", "art_8", "art_9", "art_11"]
+# Maksymalna długość tekstu artykułu w prompcie (długie artykuły skracamy)
+ARTICLE_EXCERPT_LIMIT = 400
+
+
+def _excerpt(text: str) -> str:
+    if len(text) <= ARTICLE_EXCERPT_LIMIT:
+        return text
+    return text[:ARTICLE_EXCERPT_LIMIT] + "…"
+
+
 def query_law(query: str, n_results: int = 3) -> list[dict]:
-    """Wyszukuje semantycznie najbardziej relevantne przepisy dla zapytania."""
+    """Zwraca przypięte artykuły kluczowe + semantyczne wyniki dla zapytania."""
     collection = get_chroma_collection()
     if collection.count() == 0:
         setup_rag()
 
-    results = collection.query(
-        query_texts=[query],
-        n_results=min(n_results, collection.count()),
-    )
-    return [
-        {
-            "text": results["documents"][0][i],
-            "article": results["metadatas"][0][i]["article"],
-            "topic": results["metadatas"][0][i]["topic"],
-        }
-        for i in range(len(results["documents"][0]))
-    ]
+    # Zawsze dołącz kluczowe artykuły
+    chunks: list[dict] = []
+    seen_ids: set[str] = set()
+    pinned = collection.get(ids=PINNED_ARTICLE_IDS)
+    for i, doc in enumerate(pinned["documents"]):
+        if doc:
+            art_id = PINNED_ARTICLE_IDS[i]
+            seen_ids.add(art_id)
+            chunks.append({
+                "text": _excerpt(doc),
+                "article": pinned["metadatas"][i]["article"],
+                "topic": pinned["metadatas"][i]["topic"],
+            })
+
+    # Semantyczne uzupełnienie dla pozostałych tematów
+    extra = collection.query(query_texts=[query], n_results=min(n_results + 3, collection.count()))
+    for i, doc in enumerate(extra["documents"][0]):
+        meta = extra["metadatas"][0][i]
+        art_id = extra["ids"][0][i]
+        if art_id not in seen_ids and len(chunks) < len(PINNED_ARTICLE_IDS) + n_results:
+            seen_ids.add(art_id)
+            chunks.append({
+                "text": _excerpt(doc),
+                "article": meta["article"],
+                "topic": meta["topic"],
+            })
+
+    return chunks
 
 
 def reset_rag() -> None:

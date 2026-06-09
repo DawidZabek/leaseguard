@@ -10,19 +10,18 @@
     <header class="header">
         <div class="container header-inner">
             <a href="/" class="header-brand">
-                <span class="logo-icon">🏠</span>
                 <span class="logo-text">LeaseGuard</span>
             </a>
             <nav class="nav">
-                <a href="/contract" class="nav-link">📄 Analiza umowy</a>
-                <a href="/protocol" class="nav-link nav-link--active">📸 Protokół</a>
+                <a href="/contract" class="nav-link">Analiza umowy</a>
+                <a href="/protocol" class="nav-link nav-link--active">Protokół</a>
             </nav>
         </div>
     </header>
 
     <main class="container">
         <div class="page-header">
-            <h1>📸 Protokół zdawczo-odbiorczy</h1>
+            <h1>Protokół zdawczo-odbiorczy</h1>
             <p>Wgraj zdjęcia z mieszkania — AI wykryje usterki i wygeneruje protokół</p>
         </div>
 
@@ -35,9 +34,8 @@
 
                 <div class="upload-zone" id="upload-zone">
                     <div class="upload-zone-inner">
-                        <span class="upload-icon">📷</span>
                         <p>Przeciągnij zdjęcia tutaj lub kliknij aby wybrać</p>
-                        <p class="upload-hint">PNG, JPG, JPEG, WEBP • Maksymalnie 10 zdjęć • Max 16 MB łącznie</p>
+                        <p class="upload-hint">PNG, JPG, JPEG, WEBP &bull; Maksymalnie 10 zdjęć &bull; Max 16 MB łącznie</p>
                         <input type="file" id="photo-input" multiple accept=".png,.jpg,.jpeg,.webp" style="display:none;">
                         <button class="btn btn--secondary" onclick="document.getElementById('photo-input').click()">
                             Wybierz zdjęcia
@@ -50,7 +48,7 @@
                 <div class="upload-actions">
                     <span id="photo-count" class="photo-count"></span>
                     <button id="generate-btn" class="btn btn--primary" disabled>
-                        🔍 Generuj protokół
+                        Generuj protokół
                     </button>
                 </div>
             </div>
@@ -58,7 +56,7 @@
 
         <div class="loader" id="loader" style="display:none;">
             <div class="loader-spinner"></div>
-            <p>Agenci AI analizują zdjęcia...<br><small>PhotoAnalysisAgent → ProtocolAgent</small></p>
+            <p>Agenci AI analizują zdjęcia...<br><small>PhotoAnalysisAgent &rarr; ProtocolAgent</small></p>
         </div>
 
         <div class="error-box" id="error-box" style="display:none;"></div>
@@ -70,18 +68,18 @@
 
             <div class="protocol-text-section">
                 <div class="protocol-text-header">
-                    <h3>📋 Protokół zdawczo-odbiorczy</h3>
-                    <button id="copy-protocol" class="btn btn--secondary btn--sm">📋 Kopiuj</button>
-                    <button id="print-protocol" class="btn btn--secondary btn--sm">🖨️ Drukuj</button>
+                    <h3>Protokół zdawczo-odbiorczy</h3>
+                    <button id="copy-protocol" class="btn btn--secondary btn--sm">Kopiuj</button>
+                    <button id="export-pdf" class="btn btn--primary btn--sm">Pobierz PDF</button>
                 </div>
-                <pre class="protocol-text" id="protocol-text"></pre>
+                <textarea class="protocol-text protocol-text--editable" id="protocol-text" spellcheck="false"></textarea>
             </div>
         </div>
     </main>
 
     <footer class="footer">
         <div class="container">
-            <p>LeaseGuard — projekt AI/LLM | Powered by Google Gemini 2.5 Flash</p>
+            <p>LeaseGuard — projekt AI/LLM</p>
         </div>
     </footer>
 

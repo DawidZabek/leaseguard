@@ -5,24 +5,31 @@ from models.schemas import RoomCondition
 from agents.utils import generate_with_fallback
 
 
-PHOTO_PROMPT = """Jesteś ekspertem od oceny stanu technicznego mieszkań w Polsce.
+PHOTO_PROMPT = """Jesteś rzeczoznawcą sporządzającym protokół zdawczo-odbiorczy mieszkania w Polsce.
 
-Przeanalizuj to zdjęcie pomieszczenia i zidentyfikuj:
-1. Jakie to pomieszczenie (salon, sypialnia, łazienka, kuchnia, korytarz, itp.)
-2. Wszelkie usterki, uszkodzenia, zabrudzenia lub problemy techniczne
-3. Ogólny stan pomieszczenia
+Twoim zadaniem jest ocena FIZYCZNEGO stanu pomieszczenia pod kątem usterek istotnych przy przekazaniu lokalu.
 
-Zwróć JSON z polami:
-- room_name: nazwa pomieszczenia
-- defects: lista usterek jako array of strings (każda usterka to osobny string, konkretny i szczegółowy)
+Zgłaszaj TYLKO rzeczywiste usterki fizyczne:
+- uszkodzenia mechaniczne (pęknięcia, rysy, dziury, odpryski tynku, zarysowania)
+- ślady wilgoci, pleśni, zacieki na ścianach/suficie
+- uszkodzony sprzęt (niedziałające gniazdka, krany, zamki, okna)
+- zabrudzenia trwałe (plamy na podłodze, ścianie)
+- zniszczenia mebli lub wyposażenia stanowiącego część lokalu
+
+NIE zgłaszaj:
+- normalnego, estetycznego wyglądu (kolor ściany, styl mebli, dekoracje)
+- drobnych niedoskonałości niewidocznych w normalnym użytkowaniu
+- elementów wyglądających "zbyt dobrze" lub "zbyt nowych"
+- czegokolwiek dotyczącego stylu, designu lub gustu
+
+Jeśli zdjęcie przedstawia pomieszczenie w dobrym stanie bez widocznych usterek fizycznych — zwróć pustą listę defects. Nie wymuszaj usterek na siłę.
+
+Zwróć JSON:
+- room_name: nazwa pomieszczenia (salon, sypialnia, łazienka, kuchnia, korytarz, inne)
+- defects: lista fizycznych usterek (array of strings, każda opisana konkretnie np. "pęknięcie tynku nad oknem ~15cm") lub []
 - general_condition: "dobry" / "średni" / "zły"
-- recommendations: lista zaleceń do dokumentacji (array of strings)
-- photo_description: krótki opis co widać na zdjęciu (1-2 zdania)
-
-Bądź dokładny i szczegółowy. Każda usterka powinna być opisana precyzyjnie
-(np. "pęknięcie tynku nad oknem ok. 30cm", "zardzewiały kran w zlewie", "plama wilgoci na suficie ok. 20x20cm").
-
-Jeśli pomieszczenie jest w dobrym stanie i brak usterek, zwróć pustą listę defects.
+- recommendations: zalecenia do protokołu, np. "udokumentować stan podłogi przed wprowadzeniem" (array) lub []
+- photo_description: 1 zdanie co widać na zdjęciu
 
 Zwróć TYLKO JSON, bez dodatkowego tekstu.
 """
