@@ -1,104 +1,55 @@
 import os
+import re
 import requests
 import chromadb
 from chromadb.utils import embedding_functions
+from bs4 import BeautifulSoup
 
 CHROMA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "chroma_db")
 
-# Kluczowe przepisy ustawy o ochronie praw lokatorów (Dz.U. 2001 nr 71 poz. 733)
-# Załadowane statycznie jako fallback gdy ISAP API niedostępne
-TENANT_LAW_CHUNKS = [
-    {
-        "id": "art_6_1",
-        "text": "Art. 6. § 1. Zawarcie umowy najmu może być uzależnione od wpłacenia przez najemcę kaucji zabezpieczającej pokrycie należności z tytułu najmu lokalu, przysługujących wynajmującemu w dniu opróżnienia lokalu. Kaucja nie może przekraczać dwunastokrotności miesięcznego czynszu za dany lokal, obliczonego według stawki czynszu obowiązującej w dniu zawarcia umowy najmu.",
-        "article": "art. 6 ust. 1",
-        "topic": "kaucja"
-    },
-    {
-        "id": "art_6_2",
-        "text": "Art. 6. § 2. W przypadku najmu okazjonalnego lokalu kaucja nie może przekraczać sześciokrotności miesięcznego czynszu za dany lokal, obliczonego według stawki czynszu obowiązującej w dniu zawarcia umowy najmu.",
-        "article": "art. 6 ust. 2",
-        "topic": "kaucja najem okazjonalny"
-    },
-    {
-        "id": "art_6_4",
-        "text": "Art. 6. § 4. Zwrot zwaloryzowanej kaucji następuje w kwocie równej iloczynowi kwoty miesięcznego czynszu obowiązującego w dniu zwrotu kaucji i krotności czynszu przyjętej przy pobieraniu kaucji, jednak w kwocie nie niższej niż kaucja pobrana. Kaucja podlega zwrotowi w ciągu miesiąca od dnia opróżnienia lokalu lub nabycia jego własności przez najemcę, po potrąceniu należności wynajmującego z tytułu najmu lokalu.",
-        "article": "art. 6 ust. 4",
-        "topic": "zwrot kaucji"
-    },
-    {
-        "id": "art_8a",
-        "text": "Art. 8a. Właściciel może podwyższyć czynsz albo inne opłaty za używanie lokalu, wypowiadając jego dotychczasową wysokość, najpóźniej na koniec miesiąca kalendarzowego, z zachowaniem terminów wypowiedzenia. Termin wypowiedzenia wysokości czynszu albo innych opłat za używanie lokalu wynosi 3 miesiące, chyba że strony w umowie ustalą termin dłuższy.",
-        "article": "art. 8a",
-        "topic": "podwyżka czynszu"
-    },
-    {
-        "id": "art_9",
-        "text": "Art. 9. § 1. Jeżeli podwyżka czynszu albo innych opłat za używanie lokalu przekracza w danym roku kalendarzowym wskaźnik inflacji ogłoszony przez Prezesa Głównego Urzędu Statystycznego, lokator może zakwestionować podwyżkę, składając pisemne oświadczenie w terminie 2 miesięcy od dnia wypowiedzenia.",
-        "article": "art. 9",
-        "topic": "kwestionowanie podwyżki"
-    },
-    {
-        "id": "art_10",
-        "text": "Art. 10. § 1. Właściciel lokalu, w którym czynsz jest niższy niż 3% wartości odtworzeniowej lokalu w skali roku, może dokonać podwyżki czynszu jednorazowo lub w etapach pod warunkiem, że na żądanie lokatora złoży na piśmie przyczynę podwyżki i jej kalkulację.",
-        "article": "art. 10",
-        "topic": "podwyżka czynszu powyżej 3%"
-    },
-    {
-        "id": "art_11_1",
-        "text": "Art. 11. § 1. Jeżeli lokator jest uprawniony do odpłatnego używania lokalu, wypowiedzenie przez właściciela stosunku prawnego może nastąpić tylko z przyczyn określonych w ust. 2–5 oraz w art. 21 ust. 4 i 5 niniejszej ustawy.",
-        "article": "art. 11 ust. 1",
-        "topic": "wypowiedzenie umowy"
-    },
-    {
-        "id": "art_11_2",
-        "text": "Art. 11. § 2. Nie później niż na miesiąc naprzód, na koniec miesiąca kalendarzowego, właściciel może wypowiedzieć stosunek prawny, jeżeli lokator: 1) pomimo pisemnego upomnienia nadal używa lokalu w sposób sprzeczny z umową lub niezgodnie z jego przeznaczeniem lub zaniedbuje obowiązki, dopuszczając do powstania szkód, lub niszczy urządzenia przeznaczone do wspólnego korzystania przez mieszkańców albo wykracza w sposób rażący lub uporczywy przeciwko porządkowi domowemu; 2) jest w zwłoce z zapłatą czynszu, innych opłat za używanie lokalu lub opłat niezależnych od właściciela pobieranych przez właściciela za co najmniej trzy pełne okresy płatności pomimo uprzedzenia go na piśmie o zamiarze wypowiedzenia stosunku prawnego i wyznaczenia dodatkowego, miesięcznego terminu do zapłaty zaległych i bieżących należności; 3) wynajął, podnajął albo oddał do bezpłatnego używania lokal lub jego część bez wymaganej pisemnej zgody właściciela.",
-        "article": "art. 11 ust. 2",
-        "topic": "przyczyny wypowiedzenia przez właściciela"
-    },
-    {
-        "id": "art_11_4",
-        "text": "Art. 11. § 4. Nie później niż na trzy lata naprzód, na koniec miesiąca kalendarzowego, właściciel może wypowiedzieć stosunek prawny lokatorowi, o ile zamierza zamieszkać w należącym do niego lokalu.",
-        "article": "art. 11 ust. 4",
-        "topic": "wypowiedzenie właściciel zamieszkanie"
-    },
-    {
-        "id": "art_6e",
-        "text": "Art. 6e. § 1. Najemca jest obowiązany utrzymywać lokal oraz pomieszczenia, do których używania jest uprawniony, we właściwym stanie technicznym i higieniczno-sanitarnym oraz przestrzegać porządku domowego. Najemca jest też obowiązany dbać i chronić przed uszkodzeniem lub dewastacją części budynku przeznaczone do wspólnego użytku.",
-        "article": "art. 6e",
-        "topic": "obowiązki najemcy"
-    },
-    {
-        "id": "art_6c",
-        "text": "Art. 6c. Najemca może wprowadzić w lokalu ulepszenia tylko za zgodą wynajmującego i na podstawie pisemnej umowy określającej sposób rozliczeń z tego tytułu.",
-        "article": "art. 6c",
-        "topic": "ulepszenia w lokalu"
-    },
-    {
-        "id": "art_19a",
-        "text": "Art. 19a. Umową najmu okazjonalnego lokalu jest umowa najmu lokalu służącego do zaspokajania potrzeb mieszkaniowych, zawarta na czas oznaczony, nie dłuższy niż 10 lat.",
-        "article": "art. 19a",
-        "topic": "najem okazjonalny"
-    },
-    {
-        "id": "art_6b",
-        "text": "Art. 6b. § 1. Wynajmujący jest obowiązany do zapewnienia sprawnego działania istniejących instalacji i urządzeń związanych z budynkiem umożliwiających najemcy korzystanie z wody, paliw gazowych i ciekłych, ciepła, energii elektrycznej, dźwigów osobowych oraz innych instalacji i urządzeń stanowiących wyposażenie lokalu i budynku.",
-        "article": "art. 6b",
-        "topic": "obowiązki wynajmującego instalacje"
-    },
-    {
-        "id": "art_6d",
-        "text": "Art. 6d. Najemca jest obowiązany informować wynajmującego o wszelkich uszkodzeniach i awariach wymagających naprawy przez wynajmującego niezwłocznie po ich stwierdzeniu.",
-        "article": "art. 6d",
-        "topic": "informowanie o usterkach"
-    },
-    {
-        "id": "art_15",
-        "text": "Art. 15. § 1. Jeżeli lokator jest uprawniony do używania lokalu, a zajmuje lokal o powierzchni użytkowej przekraczającej 80 m² lub lokal wybudowany po dniu 5 listopada 1980 r., właściciel, który planuje wykonanie robót budowlanych wymagających opróżnienia lokalu, jest obowiązany zapewnić lokal zamienny.",
-        "article": "art. 15",
-        "topic": "lokal zamienny remont"
-    },
-]
+# Ustawa o ochronie praw lokatorów — Dz.U. 2001 nr 71 poz. 733
+ISAP_ELI_URL = "https://api.sejm.gov.pl/eli/acts/DU/2001/733/text.html"
+
+# Artykuły kluczowe dla najmu — pobierane priorytetowo
+KEY_ARTICLES = {1, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 19, 21, 25, 26, 28}
+
+
+def _fetch_law_from_isap() -> list[dict]:
+    """Pobiera tekst ustawy z ISAP ELI API i zwraca listę chunków (artykuł → tekst)."""
+    headers = {"User-Agent": "LeaseGuard/1.0 (projekt edukacyjny; kontakt: student)"}
+    response = requests.get(ISAP_ELI_URL, headers=headers, timeout=20)
+    response.raise_for_status()
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    chunks = []
+
+    # Każdy artykuł ma id zawierający "arti_N"
+    article_divs = soup.find_all("div", id=re.compile(r"arti_\d+$"))
+
+    for div in article_divs:
+        art_id = div.get("id", "")
+        match = re.search(r"arti_(\d+)$", art_id)
+        if not match:
+            continue
+        art_num = int(match.group(1))
+
+        # Pobierz czysty tekst artykułu (bez tagów HTML)
+        raw_text = div.get_text(separator=" ", strip=True)
+        # Normalizuj białe znaki
+        raw_text = re.sub(r"\s+", " ", raw_text).strip()
+
+        if len(raw_text) < 30:
+            continue
+
+        chunks.append({
+            "id": f"art_{art_num}",
+            "text": raw_text,
+            "article": f"art. {art_num}",
+            "topic": f"artykuł {art_num} ustawy o ochronie praw lokatorów",
+            "priority": art_num in KEY_ARTICLES,
+        })
+
+    return chunks
 
 
 def get_chroma_collection():
@@ -107,39 +58,106 @@ def get_chroma_collection():
     collection = client.get_or_create_collection(
         name="tenant_law",
         embedding_function=ef,
-        metadata={"description": "Ustawa o ochronie praw lokatorów"}
+        metadata={"description": "Ustawa o ochronie praw lokatorów — źródło: ISAP ELI API"},
     )
     return collection
 
 
-def setup_rag():
-    """Inicjalizuje ChromaDB z przepisami ustawy o ochronie praw lokatorów."""
+def setup_rag() -> None:
+    """Inicjalizuje ChromaDB. Pobiera ustawę z ISAP API lub używa fallbacku."""
     collection = get_chroma_collection()
 
     if collection.count() > 0:
-        return collection
+        return
 
-    documents = [chunk["text"] for chunk in TENANT_LAW_CHUNKS]
-    metadatas = [{"article": c["article"], "topic": c["topic"]} for c in TENANT_LAW_CHUNKS]
-    ids = [chunk["id"] for chunk in TENANT_LAW_CHUNKS]
+    print("RAG: pobieranie ustawy z ISAP ELI API (api.sejm.gov.pl)...")
+    try:
+        chunks = _fetch_law_from_isap()
+        if not chunks:
+            raise ValueError("Brak artykułów w odpowiedzi ISAP")
+        print(f"RAG: pobrano {len(chunks)} artykułów z ISAP API")
+    except Exception as e:
+        print(f"RAG: błąd pobierania z ISAP ({e}), używam wbudowanego fallbacku")
+        chunks = _get_fallback_chunks()
+
+    documents = [c["text"] for c in chunks]
+    metadatas = [{"article": c["article"], "topic": c["topic"]} for c in chunks]
+    ids = [c["id"] for c in chunks]
 
     collection.add(documents=documents, metadatas=metadatas, ids=ids)
-    print(f"RAG: załadowano {len(TENANT_LAW_CHUNKS)} przepisów do ChromaDB")
-    return collection
+    print(f"RAG: załadowano {len(chunks)} przepisów do ChromaDB")
 
 
 def query_law(query: str, n_results: int = 3) -> list[dict]:
-    """Wyszukuje najbardziej relevantne przepisy dla danego zapytania."""
+    """Wyszukuje semantycznie najbardziej relevantne przepisy dla zapytania."""
     collection = get_chroma_collection()
     if collection.count() == 0:
         setup_rag()
 
-    results = collection.query(query_texts=[query], n_results=min(n_results, collection.count()))
-    chunks = []
-    for i, doc in enumerate(results["documents"][0]):
-        chunks.append({
-            "text": doc,
+    results = collection.query(
+        query_texts=[query],
+        n_results=min(n_results, collection.count()),
+    )
+    return [
+        {
+            "text": results["documents"][0][i],
             "article": results["metadatas"][0][i]["article"],
             "topic": results["metadatas"][0][i]["topic"],
-        })
-    return chunks
+        }
+        for i in range(len(results["documents"][0]))
+    ]
+
+
+def reset_rag() -> None:
+    """Usuwa i odbudowuje bazę RAG (np. po aktualizacji ustawy)."""
+    import shutil
+    if os.path.exists(CHROMA_PATH):
+        shutil.rmtree(CHROMA_PATH)
+    setup_rag()
+
+
+# --- Fallback: kluczowe przepisy na wypadek braku dostępu do ISAP ---
+
+def _get_fallback_chunks() -> list[dict]:
+    return [
+        {
+            "id": "art_6_1",
+            "text": "Art. 6. § 1. Zawarcie umowy najmu może być uzależnione od wpłacenia przez najemcę kaucji zabezpieczającej pokrycie należności z tytułu najmu lokalu, przysługujących wynajmującemu w dniu opróżnienia lokalu. Kaucja nie może przekraczać dwunastokrotności miesięcznego czynszu za dany lokal, obliczonego według stawki czynszu obowiązującej w dniu zawarcia umowy najmu.",
+            "article": "art. 6 ust. 1", "topic": "kaucja",
+        },
+        {
+            "id": "art_6_4",
+            "text": "Art. 6. § 4. Zwrot zwaloryzowanej kaucji następuje w kwocie równej iloczynowi kwoty miesięcznego czynszu obowiązującego w dniu zwrotu kaucji i krotności czynszu przyjętej przy pobieraniu kaucji. Kaucja podlega zwrotowi w ciągu miesiąca od dnia opróżnienia lokalu lub nabycia jego własności przez najemcę, po potrąceniu należności wynajmującego z tytułu najmu lokalu.",
+            "article": "art. 6 ust. 4", "topic": "zwrot kaucji",
+        },
+        {
+            "id": "art_8a",
+            "text": "Art. 8a. Właściciel może podwyższyć czynsz albo inne opłaty za używanie lokalu, wypowiadając jego dotychczasową wysokość, najpóźniej na koniec miesiąca kalendarzowego, z zachowaniem terminów wypowiedzenia. Termin wypowiedzenia wysokości czynszu albo innych opłat za używanie lokalu wynosi 3 miesiące, chyba że strony w umowie ustalą termin dłuższy.",
+            "article": "art. 8a", "topic": "podwyżka czynszu",
+        },
+        {
+            "id": "art_11_2",
+            "text": "Art. 11. § 2. Nie później niż na miesiąc naprzód, na koniec miesiąca kalendarzowego, właściciel może wypowiedzieć stosunek prawny, jeżeli lokator jest w zwłoce z zapłatą czynszu za co najmniej trzy pełne okresy płatności lub używa lokalu w sposób sprzeczny z umową.",
+            "article": "art. 11 ust. 2", "topic": "wypowiedzenie przez właściciela",
+        },
+        {
+            "id": "art_11_4",
+            "text": "Art. 11. § 4. Nie później niż na trzy lata naprzód, na koniec miesiąca kalendarzowego, właściciel może wypowiedzieć stosunek prawny lokatorowi, o ile zamierza zamieszkać w należącym do niego lokalu.",
+            "article": "art. 11 ust. 4", "topic": "wypowiedzenie właściciel zamieszkanie",
+        },
+        {
+            "id": "art_6b",
+            "text": "Art. 6b. Wynajmujący jest obowiązany do zapewnienia sprawnego działania istniejących instalacji i urządzeń związanych z budynkiem umożliwiających najemcy korzystanie z wody, paliw gazowych i ciekłych, ciepła, energii elektrycznej, dźwigów osobowych oraz innych instalacji i urządzeń stanowiących wyposażenie lokalu i budynku.",
+            "article": "art. 6b", "topic": "obowiązki wynajmującego instalacje",
+        },
+        {
+            "id": "art_6e",
+            "text": "Art. 6e. Najemca jest obowiązany utrzymywać lokal oraz pomieszczenia, do których używania jest uprawniony, we właściwym stanie technicznym i higieniczno-sanitarnym oraz przestrzegać porządku domowego.",
+            "article": "art. 6e", "topic": "obowiązki najemcy",
+        },
+        {
+            "id": "art_19a",
+            "text": "Art. 19a. Umową najmu okazjonalnego lokalu jest umowa najmu lokalu służącego do zaspokajania potrzeb mieszkaniowych, zawarta na czas oznaczony, nie dłuższy niż 10 lat.",
+            "article": "art. 19a", "topic": "najem okazjonalny",
+        },
+    ]

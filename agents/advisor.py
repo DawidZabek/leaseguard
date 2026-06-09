@@ -1,9 +1,6 @@
-import os
 import json
-import google.generativeai as genai
 from models.schemas import ClauseRisk, LeaseReport
-
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+from agents.utils import generate_with_fallback
 
 
 ADVISOR_PROMPT = """Jesteś doradcą dla najemców mieszkań w Polsce.
@@ -43,16 +40,14 @@ def run_advisor(clause_risks: list[ClauseRisk]) -> LeaseReport:
             f"   Ocena: {cr.justification}"
         )
 
-    model = genai.GenerativeModel("gemini-2.5-flash")
     prompt = ADVISOR_PROMPT.format(
         clauses_summary="\n\n".join(clauses_summary),
         ok_count=risk_summary["ok"],
         warning_count=risk_summary["warning"],
         illegal_count=risk_summary["illegal"],
     )
-    response = model.generate_content(prompt)
+    text = generate_with_fallback(prompt)
 
-    text = response.text.strip()
     if text.startswith("```"):
         text = text.split("```")[1]
         if text.startswith("json"):

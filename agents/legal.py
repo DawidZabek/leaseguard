@@ -39,7 +39,7 @@ def run_legal(clause: ContractClause) -> dict:
         f"{c['article']}: {c['text']}" for c in law_chunks
     ])
 
-    model = genai.GenerativeModel("gemini-2.5-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash")
     prompt = LEGAL_PROMPT.format(
         clause_type=clause.clause_type,
         content=clause.content,

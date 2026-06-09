@@ -1,12 +1,8 @@
-import os
 import json
-import base64
-import google.generativeai as genai
 from PIL import Image
 import io
 from models.schemas import RoomCondition
-
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+from agents.utils import generate_with_fallback
 
 
 PHOTO_PROMPT = """Jesteś ekspertem od oceny stanu technicznego mieszkań w Polsce.
@@ -32,25 +28,19 @@ Zwróć TYLKO JSON, bez dodatkowego tekstu.
 """
 
 
-def _encode_image(image_path: str) -> tuple[bytes, str]:
+def _encode_image(image_path: str) -> dict:
     with Image.open(image_path) as img:
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=85)
-        return buf.getvalue(), "image/jpeg"
+        return {"mime_type": "image/jpeg", "data": buf.getvalue()}
 
 
 def run_photo_analysis(image_path: str) -> RoomCondition:
-    image_bytes, mime_type = _encode_image(image_path)
+    image_data = _encode_image(image_path)
+    text = generate_with_fallback(PHOTO_PROMPT, image_data=image_data)
 
-    model = genai.GenerativeModel("gemini-2.5-flash")
-    response = model.generate_content([
-        {"mime_type": mime_type, "data": image_bytes},
-        PHOTO_PROMPT,
-    ])
-
-    text = response.text.strip()
     if text.startswith("```"):
         text = text.split("```")[1]
         if text.startswith("json"):

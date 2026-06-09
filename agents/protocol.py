@@ -1,10 +1,6 @@
-import os
-import json
 from datetime import date
-import google.generativeai as genai
 from models.schemas import RoomCondition, HandoverProtocol
-
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+from agents.utils import generate_with_fallback
 
 
 PROTOCOL_PROMPT = """Jesteś specjalistą od tworzenia protokołów zdawczo-odbiorczych mieszkań w Polsce.
@@ -42,17 +38,16 @@ def run_protocol(rooms: list[RoomCondition], address: str = "") -> HandoverProto
             f"Opis: {room.photo_description}"
         )
 
-    model = genai.GenerativeModel("gemini-2.5-flash")
     prompt = PROTOCOL_PROMPT.format(
         today=date.today().strftime("%d.%m.%Y"),
         address=address or "adres do uzupełnienia",
         rooms_summary="\n\n".join(rooms_summary),
     )
-    response = model.generate_content(prompt)
+    protocol_text = generate_with_fallback(prompt)
 
     return HandoverProtocol(
         property_address=address,
         rooms=rooms,
-        protocol_text=response.text.strip(),
+        protocol_text=protocol_text.strip(),
         total_defects=total_defects,
     )

@@ -2,8 +2,7 @@ import os
 import sys
 import json
 import uuid
-from pathlib import Path
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 
@@ -13,7 +12,6 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from rag.setup import setup_rag
 from agents.extractor import run_extractor
-from agents.risk import run_risk
 from agents.advisor import run_advisor
 from agents.photo import run_photo_analysis
 from agents.protocol import run_protocol
@@ -58,11 +56,10 @@ def analyze_contract():
         return jsonify({"error": "Tekst umowy jest zbyt krótki"}), 400
 
     try:
-        clauses = run_extractor(contract_text)
+        clauses, clause_risks = run_extractor(contract_text)
         if not clauses:
             return jsonify({"error": "Nie wykryto żadnych klauzul w tekście"}), 400
 
-        clause_risks = [run_risk(clause) for clause in clauses]
         report = run_advisor(clause_risks)
 
         return jsonify({
