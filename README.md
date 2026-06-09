@@ -1,70 +1,155 @@
 # LeaseGuard — Inteligentny asystent najemcy
 
-## Problem biznesowy
+## Kontekst biznesowy
 
-Najemca podpisuje umowę najmu nie rozumiejąc klauzul i traci kaucję za usterki, które zastał przy wprowadzeniu. Weryfikacja umowy u prawnika kosztuje **300–500 zł** i trwa **2 godziny**. LeaseGuard redukuje to do **2 minut** i **0 zł**.
+**Branża:** PropTech / Nieruchomości / LegalTech
 
-**Dla kogo:** firmy zarządzające nieruchomościami (Mzuri), agencje (Metrohouse, Freedom), platformy ogłoszeniowe (Otodom).
+**Docelowi odbiorcy:**
+- Firmy zarządzające nieruchomościami (np. Mzuri)
+- Agencje nieruchomości (np. Metrohouse, Freedom Nieruchomości)
+- Platformy ogłoszeniowe (np. Otodom)
+
+Wszyscy mają interes w automatycznej weryfikacji umów najmu przed podpisaniem — buduje to zaufanie klientów i ogranicza spory.
 
 ---
 
-## Funkcje
+## Problem
+
+Najemca podpisuje umowę najmu — 8 stron prawniczego języka — i jednocześnie odbiera klucze bez protokołu. Nie wie:
+
+- czy kaucja 3-miesięczna jest w granicach prawa,
+- czy właściciel może wejść do mieszkania bez uprzedzenia,
+- czy odpowiada za zniszczenia, które zastał przy wprowadzeniu.
+
+Rok później **traci kaucję** za rysy, które były na ścianie przed jego wprowadzeniem.
+
+Weryfikacja umowy u prawnika kosztuje **300–500 zł** i trwa **2 godziny**. LeaseGuard robi to w **2 minuty** i **0 zł**.
+
+---
+
+## Rozwiązanie
+
+LeaseGuard to webowa aplikacja AI działająca w dwóch modułach:
 
 ### Moduł 1 — Analiza umowy najmu
-- Wyodrębnia wszystkie klauzule (kaucja, wypowiedzenie, czynsz, naprawy, kary)
-- Weryfikuje każdą klauzulę względem **ustawy o ochronie praw lokatorów** (RAG na ChromaDB)
-- Klasyfikuje ryzyko: ✅ OK / ⚠️ Podejrzana / ❌ Niezgodna z prawem
-- Generuje pytania do zadania właścicielowi + rekomendację końcową
+
+Użytkownik wkleja lub wgrywa (PDF, DOCX) tekst umowy najmu. Agenci AI:
+
+1. Wyciągają wszystkie klauzule (kaucja, czynsz, wypowiedzenie, naprawy, zakazy, kary umowne)
+2. Weryfikują każdą klauzulę względem **ustawy o ochronie praw lokatorów** przy użyciu RAG (ChromaDB)
+3. Klasyfikują ryzyko: OK / Podejrzana / Niezgodna z prawem
+4. Podają konkretną podstawę prawną naruszenia
+5. Generują listę pytań do zadania właścicielowi przed podpisaniem
 
 ### Moduł 2 — Protokół zdawczo-odbiorczy
-- Analizuje zdjęcia mieszkania (Gemini Vision)
-- Wykrywa usterki pokój po pokoju
-- Generuje profesjonalny protokół zdawczo-odbiorczy gotowy do wydruku
+
+Użytkownik wgrywa zdjęcia z mieszkania (do 10 zdjęć). Agenci AI:
+
+1. Wykrywają usterki pokój po pokoju przy użyciu Gemini Vision
+2. Oceniają stan każdego pomieszczenia
+3. Generują gotowy protokół zdawczo-odbiorczy z opisami usterek
+4. Eksportują protokół do PDF gotowego do podpisu
 
 ---
 
-## Demo — Golden Path
+## Architektura systemu
 
-**Umowa z kaucją 4 miesiące (10 000 zł):**
-- Agent flaguje ❌ niezgodność z art. 6 ust. 1 (max kaucja = 12× czynsz, ale 4 miesiące jest zgodne — agent sprawdza)
-- Agent flaguje ❌ brak okresu wypowiedzenia dla wynajmującego (art. 11)
-- Agent flaguje ⚠️ jednostronne prawo do podwyżki czynszu (art. 8a)
-- Generuje 5 pytań do właściciela + rekomendację negocjacji
+```
+Moduł 1 — Analiza umowy
+  ExtractorAgent     wyciąga i analizuje klauzule z tekstu umowy
+       |
+       v
+  RAG (ChromaDB)     pobiera relewantne artykuły ustawy z bazy wektorowej
+       |
+       v
+  AdvisorAgent       generuje pytania do właściciela i rekomendację końcową
 
-**Edge case — umowa bez okresu wypowiedzenia:**
-- Agent wykrywa brak + oznacza ❌ i ostrzega o prawie do natychmiastowego eksmisji
+Moduł 2 — Protokół
+  PhotoAnalysisAgent     Gemini Vision analizuje każde zdjęcie osobno
+       |
+       v
+  ProtocolAgent          składa wyniki w jeden protokół zdawczo-odbiorczy
+```
+
+### Agenci i ich odpowiedzialności
+
+| Agent | Plik | Odpowiedzialność |
+|---|---|---|
+| `ExtractorAgent` | `agents/extractor.py` | Ekstrakcja klauzul z tekstu umowy + ocena względem ustawy (RAG) |
+| `AdvisorAgent` | `agents/advisor.py` | Rekomendacja końcowa + pytania do właściciela |
+| `PhotoAnalysisAgent` | `agents/photo.py` | Analiza zdjęć — wykrywanie usterek, ocena stanu pomieszczeń |
+| `ProtocolAgent` | `agents/protocol.py` | Generowanie tekstu protokołu zdawczo-odbiorczego |
 
 ---
 
-## Architektura — 6 agentów
+## Stack technologiczny
 
-```
-Moduł 1: Analiza umowy
-  ExtractorAgent  →  LegalAgent (RAG)  →  RiskAgent  →  AdvisorAgent
-  
-Moduł 2: Protokół
-  PhotoAnalysisAgent (Gemini Vision)  →  ProtocolAgent
-```
+| Warstwa | Technologia |
+|---|---|
+| LLM + Vision | Google Gemini 2.0 Flash (łańcuch fallback przez 6 modeli Gemini) |
+| RAG — baza wektorowa | ChromaDB (wbudowane embeddingi) |
+| Structured output | Pydantic v2 (modele: `ContractClause`, `ClauseRisk`, `RoomCondition`, `LeaseReport`, `HandoverProtocol`) |
+| Backend | Python 3.11 + Flask |
+| Frontend | HTML / CSS / JavaScript (vanilla) |
+| Eksport PDF | fpdf2 |
+| Parsowanie dokumentów | PyMuPDF (PDF), python-docx (DOCX) |
 
-**Stack:** Python 3.11 · Flask · Google Gemini 2.5 Flash · Agno · Pydantic v2 · ChromaDB
+---
+
+## Źródła danych
+
+| Źródło | Zastosowanie |
+|---|---|
+| ISAP ELI API (`api.sejm.gov.pl`) | Pobieranie tekstu ustawy o ochronie praw lokatorów — baza RAG |
+| Zdjęcia wgrane przez użytkownika | Analiza Gemini Vision — wykrywanie usterek |
+| Syntetyczne umowy najmu | Dane testowe do demonstracji modułu analizy |
+| Syntetyczne zdjęcia mieszkań | Dane testowe do demonstracji modułu protokołu |
+
+Podstawa prawna RAG: **Ustawa z dnia 21 czerwca 2001 r. o ochronie praw lokatorów, mieszkaniowym zasobie gminy i o zmianie Kodeksu cywilnego** (Dz.U. 2001 nr 71 poz. 733 ze zm.)
+
+---
+
+## Modele Pydantic (structured output)
+
+```python
+class ContractClause(BaseModel):
+    clause_type: str          # typ klauzuli (kaucja, czynsz, wypowiedzenie…)
+    content: str              # opis klauzuli
+    raw_excerpt: str          # cytat z umowy
+    article_reference: str | None
+
+class ClauseRisk(BaseModel):
+    clause: ContractClause
+    status: Literal["ok", "warning", "illegal"]
+    justification: str        # uzasadnienie oceny
+    legal_basis: str | None   # art. X ustawy lub KC
+    recommendation: str
+
+class RoomCondition(BaseModel):
+    room_name: str
+    defects: list[str]
+    general_condition: Literal["dobry", "średni", "zły"]
+    recommendations: list[str]
+    photo_description: str
+```
 
 ---
 
 ## Instalacja i uruchomienie
 
 ```bash
-# 1. Sklonuj repo i wejdź do katalogu
+# 1. Sklonuj repozytorium
 git clone https://github.com/DawidZabek/leaseguard
 cd leaseguard
 
-# 2. Utwórz środowisko wirtualne
+# 2. Utwórz i aktywuj środowisko wirtualne
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate       # Windows: venv\Scripts\activate
 
 # 3. Zainstaluj zależności
 pip install -r requirements.txt
 
-# 4. Skonfiguruj klucz API
+# 4. Skonfiguruj klucz API Gemini
 cp .env.example .env
 # Uzupełnij GEMINI_API_KEY w pliku .env
 
@@ -76,30 +161,28 @@ Aplikacja dostępna pod: **http://localhost:5000**
 
 ---
 
-## Struktura plików
+## Struktura projektu
 
 ```
 leaseguard/
-├── app.py                  # Flask app + API endpoints
+├── app.py                            # Flask — endpointy API i eksport PDF
 ├── agents/
-│   ├── extractor.py        # ExtractorAgent — wyciąga klauzule
-│   ├── legal.py            # LegalAgent — RAG na ChromaDB
-│   ├── risk.py             # RiskAgent — klasyfikacja ryzyka
-│   ├── advisor.py          # AdvisorAgent — rekomendacja końcowa
-│   ├── photo.py            # PhotoAnalysisAgent — Gemini Vision
-│   └── protocol.py         # ProtocolAgent — generuje protokół
+│   ├── extractor.py                  # ExtractorAgent — ekstrakcja + analiza klauzul (RAG)
+│   ├── advisor.py                    # AdvisorAgent — rekomendacja + pytania
+│   ├── photo.py                      # PhotoAnalysisAgent — Gemini Vision
+│   ├── protocol.py                   # ProtocolAgent — generowanie protokołu
+│   └── utils.py                      # Gemini multi-model fallback + rotacja kluczy API
 ├── models/
-│   └── schemas.py          # Pydantic models
+│   └── schemas.py                    # Pydantic v2 — modele danych
 ├── rag/
-│   └── setup.py            # ChromaDB + przepisy ustawy
-├── templates/              # HTML (Flask/Jinja2)
-├── static/                 # CSS + JS
-├── data/                   # Przykładowe umowy do testów
+│   └── setup.py                      # ChromaDB — ładowanie ustawy z ISAP API
+├── templates/                        # Szablony HTML (Flask/Jinja2)
+├── static/
+│   ├── css/style.css
+│   └── js/                           # contract.js, protocol.js, main.js
+├── data/
+│   ├── sample_contract_edge.txt      # Przykładowa umowa do testów (edge cases)
+│   └── chroma_db/                    # Baza wektorowa ChromaDB (auto-generowana)
+├── .env.example
 └── requirements.txt
 ```
-
----
-
-## Podstawa prawna
-
-RAG oparty na **Ustawie z dnia 21 czerwca 2001 r. o ochronie praw lokatorów, mieszkaniowym zasobie gminy i o zmianie Kodeksu cywilnego** (Dz.U. 2001 nr 71 poz. 733 ze zm.) — pobierana z ISAP API (isap.sejm.gov.pl).
