@@ -1,5 +1,21 @@
 # LeaseGuard — Inteligentny asystent najemcy
 
+## Demo
+
+### Strona główna
+![Strona główna](docs/01_homepage.png)
+
+### Moduł 1 — Analiza umowy (golden path)
+![Wprowadzanie umowy](docs/02_contract_input.png)
+![Wyniki analizy — tabela klauzul](docs/03_contract_results.png)
+![Wyniki analizy — pytania do właściciela](docs/04_contract_questions.png)
+
+### Moduł 2 — Protokół zdawczo-odbiorczy (golden path)
+![Upload zdjęć mieszkania](docs/05_protocol_upload.png)
+![Wyniki — wykryte usterki i protokół](docs/06_protocol_results.png)
+
+---
+
 ## Kontekst biznesowy
 
 **Branża:** PropTech / Nieruchomości / LegalTech
